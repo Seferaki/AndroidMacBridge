@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>CFBundleDevelopmentRegion</key>
+    <string>ru</string>
+    <key>CFBundleDisplayName</key>
+    <string>AndroidMacBridge</string>
+    <key>CFBundleExecutable</key>
+    <string>BridgeMac</string>
+    <key>CFBundleIdentifier</key>
+    <string>dev.seferaki.SamsungMacBridge</string>
+    <key>CFBundleInfoDictionaryVersion</key>
+    <string>6.0</string>
+    <key>CFBundleName</key>
+    <string>AndroidMacBridge</string>
+    <key>CFBundlePackageType</key>
+    <string>APPL</string>
+    <key>CFBundleIconFile</key>
+    <string>SamsungMacBridgeIcon20261102</string>
+    <key>CFBundleShortVersionString</key>
+    <string>1.0.0</string>
+    <key>CFBundleVersion</key>
+    <string>2</string>
+    <key>LSMinimumSystemVersion</key>
+    <string>13.0</string>
+    <key>NSLocalNetworkUsageDescription</key>
+    <string>Приложение обменивается файлами, ссылками, текстом и буфером обмена с вашим телефоном Android через локальную сеть Wi‑Fi.</string>
+    <key>NSBluetoothAlwaysUsageDescription</key>
+    <string>Bluetooth используется для прямого обмена файлами и буфером с сопряжённым телефоном, когда устройства находятся в разных сетях Wi‑Fi.</string>
+    <key>NSBonjourServices</key>
+    <array>
+        <string>_smbbridge._tcp</string>
+    </array>
+</dict>
+</plist>

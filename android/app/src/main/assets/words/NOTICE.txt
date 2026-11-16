@@ -1,0 +1,5 @@
+Word lists are derived from FrequencyWords 2018 Russian and English lists:
+https://github.com/hermitdave/FrequencyWords (copyright 2016 Hermit Dave).
+Only alphabetic entries are retained, in frequency order, up to 20,000 per language.
+The project license is in LICENSE-FrequencyWords.txt. The underlying corpus is
+OpenSubtitles: https://opus.nlpl.eu/OpenSubtitles.php
