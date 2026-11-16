@@ -74,20 +74,23 @@ internal data class AndroidCompatibilitySnapshot(
     val fileReceiveService: String,
     val backgroundPolicy: String
 ) {
-    fun format(): String = listOf(
-        "Устройство: $deviceName",
+    fun format(context: Context): String {
+        fun t(value: String) = AppLanguage.translate(context, value)
+        return listOf(
+        "${t("Устройство")}: $deviceName",
         "Android $androidVersion · API $apiLevel",
-        "Локальная сеть: ${localNetwork.description}",
-        "Bluetooth LE: ${bluetoothLe.description}",
-        "Уведомления: ${notifications.description}",
-        "Клавиатура AndroidMacBridge: ${keyboard.description}",
-        "Автокопирование: ${accessibility.description}",
-        "Общий буфер в фоне: $clipboardService",
-        "Приём файлов в фоне: $fileReceiveService",
-        "Фоновая работа: $backgroundPolicy",
-        "«Поделиться»: файлы и текст принимаются через системное меню.",
-        "Если причина ограничения не показана Android, проверьте настройки батареи и фоновой работы вручную."
+        "${t("Локальная сеть")}: ${t(localNetwork.description)}",
+        "${t("Bluetooth LE")}: ${t(bluetoothLe.description)}",
+        "${t("Уведомления")}: ${t(notifications.description)}",
+        "${t("Клавиатура AndroidMacBridge")}: ${t(keyboard.description)}",
+        "${t("Автокопирование")}: ${t(accessibility.description)}",
+        "${t("Общий буфер в фоне")}: ${t(clipboardService)}",
+        "${t("Приём файлов в фоне")}: ${t(fileReceiveService)}",
+        "${t("Фоновая работа")}: ${t(backgroundPolicy)}",
+        t("«Поделиться»: файлы и текст принимаются через системное меню."),
+        t("Если причина ограничения не показана Android, проверьте настройки батареи и фоновой работы вручную.")
     ).joinToString("\n")
+    }
 
     companion object {
         fun capture(context: Context): AndroidCompatibilitySnapshot {

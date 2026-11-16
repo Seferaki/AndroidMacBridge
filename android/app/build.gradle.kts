@@ -7,6 +7,7 @@ android {
     defaultConfig { applicationId = "dev.seferaki.bridge"; minSdk = 29; targetSdk = 37; versionCode = 2; versionName = "1.0.0" }
     buildTypes { release { isMinifyEnabled = false } }
     compileOptions { sourceCompatibility = JavaVersion.VERSION_17; targetCompatibility = JavaVersion.VERSION_17 }
+    sourceSets.getByName("main").assets.directories.add("../../shared/localization")
 }
 dependencies {
     implementation("androidx.activity:activity:1.10.1")

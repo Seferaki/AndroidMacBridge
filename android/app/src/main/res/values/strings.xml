@@ -1,13 +1,16 @@
 <resources>
     <string name="app_name" translatable="false">AndroidMacBridge</string>
-    <string name="clipboard_tile_label">На Mac</string>
-    <string name="clipboard_tile_description">Отправить текущий текст из буфера обмена на Mac</string>
-    <string name="keyboard_ime_label">Клавиатура AndroidMacBridge</string>
-    <string name="keyboard_subtype_ru">Русский</string>
-    <string name="keyboard_subtype_en">Английский</string>
-    <string name="clipboard_accessibility_label">Автокопирование на Mac</string>
-    <string name="clipboard_accessibility_description">Распознаёт действие копирования в других приложениях и отправляет скопированный обычный текст на сопряжённый Mac, если выбран автоматический режим и включён общий буфер.</string>
-    <string name="compatibility_title">Совместимость устройства</string>
-    <string name="compatibility_refresh">Обновить состояние</string>
-    <string name="compatibility_open_settings">Открыть настройки приложения Android</string>
+    <string name="clipboard_tile_label">To Mac</string>
+    <string name="clipboard_tile_description">Send the current clipboard text to your Mac</string>
+    <string name="keyboard_ime_label">AndroidMacBridge keyboard</string>
+    <string name="keyboard_subtype_ru">Russian</string>
+    <string name="keyboard_subtype_en">English</string>
+    <string name="clipboard_accessibility_label">Auto-copy to Mac</string>
+    <string name="clipboard_accessibility_description">Recognizes copy actions in other apps and sends copied plain text to the paired Mac when automatic mode and shared clipboard are enabled.</string>
+    <string name="compatibility_title">Device compatibility</string>
+    <string name="compatibility_refresh">Refresh status</string>
+    <string name="compatibility_open_settings">Open Android app settings</string>
+    <string name="app_language_title">App language</string>
+    <string name="app_language_description">Choose your interface language. Some system messages may still appear in Russian.</string>
+    <string name="language_select_title">Select app language</string>
 </resources>

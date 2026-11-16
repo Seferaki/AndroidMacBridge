@@ -28,6 +28,7 @@
 - **Wi-Fi or Bluetooth.** Use the same local network or connect directly over Bluetooth when the devices are on different networks.
 - **Separate device-pair history.** Clipboard entries and transfers are stored separately for each Android–Mac pair.
 - **No cloud relay.** Devices communicate directly over an encrypted connection.
+- **50 language choices.** English is selected by default; other choices use available translations and fall back to English. See [language support](docs/LOCALIZATION.md).
 
 Background clipboard sync has been confirmed on Galaxy S25 and Redmi 15, including Telegram, WhatsApp, and Notes. Android background behavior can vary by device and battery settings.
 

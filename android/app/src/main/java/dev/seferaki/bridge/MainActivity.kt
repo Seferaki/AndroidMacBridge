@@ -164,6 +164,10 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    override fun attachBaseContext(newBase: Context) {
+        super.attachBaseContext(AppLanguage.wrap(newBase))
+    }
+
     private val qrScanner = registerForActivityResult(ScanContract()) { result ->
         val value = result.contents
         if (value.isNullOrBlank()) return@registerForActivityResult
@@ -437,7 +441,7 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun renderCompatibilityStatus() {
-        compatibilityView?.text = AndroidCompatibilitySnapshot.capture(this).format()
+        compatibilityView?.text = AndroidCompatibilitySnapshot.capture(this).format(this)
     }
 
     private fun sendCurrentClipboardToMac() {
@@ -554,7 +558,8 @@ class MainActivity : ComponentActivity() {
             addTextChangedListener(object : android.text.TextWatcher {
                 override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) = Unit
                 override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
-                    setCompoundDrawablesWithIntrinsicBounds(if (s.toString() == "Подключено") R.drawable.ic_connected else 0, 0, 0, 0)
+                    val connectedLabel = s.toString() == "Подключено" || s.toString() == "Connected"
+                    setCompoundDrawablesWithIntrinsicBounds(if (connectedLabel) R.drawable.ic_connected else 0, 0, 0, 0)
                 }
                 override fun afterTextChanged(s: android.text.Editable?) = Unit
             })
@@ -628,6 +633,35 @@ class MainActivity : ComponentActivity() {
         addGap(root, 3)
 
         val settingsPanel = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(18), dp(18), dp(18), dp(20)); visibility = View.GONE }
+        val languagePanel = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; background = panel(); blockPadding(this) }
+        languagePanel.addView(TextView(this).apply {
+            text = getString(R.string.app_language_title)
+            textSize = 15f
+            setTypeface(null, android.graphics.Typeface.BOLD)
+            setTextColor(0xFF182536.toInt())
+            setPadding(0, 0, 0, dp(4))
+        })
+        languagePanel.addView(TextView(this).apply {
+            text = getString(R.string.app_language_description)
+            textSize = 12f
+            setTextColor(0xFF657184.toInt())
+            setPadding(0, 0, 0, dp(8))
+        })
+        languagePanel.addView(compactButton(AppLanguage.selectedName(this)) {
+            val selected = AppLanguage.options.indexOfFirst { it.tag == AppLanguage.selectedTag(this) }.coerceAtLeast(0)
+            AlertDialog.Builder(this)
+                .setTitle(getString(R.string.language_select_title))
+                .setSingleChoiceItems(AppLanguage.options.map { it.nativeName }.toTypedArray(), selected) { dialog, which ->
+                    AppLanguage.setSelected(this, AppLanguage.options[which].tag)
+                    dialog.dismiss()
+                    recreate()
+                }
+                .setNegativeButton(android.R.string.cancel, null)
+                .show()
+        })
+        settingsPanel.addView(languagePanel)
+        val settingsGap = View(this).apply { minimumHeight = dp(12) }
+        settingsPanel.addView(settingsGap)
         val connectionPanel = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; background = panel(); blockPadding(this) }
         connectionPanel.addView(compactButton("Проверить соединение") {
             if (client.pair == null) deviceView?.text = "Mac не сопряжён. Подключите его по QR-коду."
@@ -917,6 +951,7 @@ class MainActivity : ComponentActivity() {
         shell.addView(navigationArea)
         showPage(if (client.pair == null) 2 else 0)
         setContentView(shell)
+        AppLanguage.applyToViewTree(this, shell, setOfNotNull(cards, clipboardHistoryList))
         updateClipboardControls()
         renderTransfers(lastTransfers)
     }

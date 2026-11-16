@@ -20,7 +20,7 @@ func localAddresses() -> [String] {
 }
 private func transferDecimal(_ value: Double, fractionDigits: Int = 1) -> String {
     let formatter = NumberFormatter()
-    formatter.locale = Locale(identifier:"ru_RU")
+    formatter.locale = Locale(identifier:UserDefaults.standard.string(forKey:"appLanguage") ?? "en")
     formatter.numberStyle = .decimal
     formatter.minimumFractionDigits = fractionDigits
     formatter.maximumFractionDigits = fractionDigits
@@ -28,18 +28,18 @@ private func transferDecimal(_ value: Double, fractionDigits: Int = 1) -> String
 }
 private func transferSize(_ bytes: Int64) -> String {
     let value = max(0, bytes)
-    if value >= 1_048_576 { return "\(transferDecimal(Double(value) / 1_048_576)) МБ" }
-    if value >= 1_024 { return "\(transferDecimal(Double(value) / 1_024)) КиБ" }
-    return "\(value) байт"
+    if value >= 1_048_576 { return "\(transferDecimal(Double(value) / 1_048_576)) MB" }
+    if value >= 1_024 { return "\(transferDecimal(Double(value) / 1_024)) KB" }
+    return "\(value) bytes"
 }
 private func transferProgressValue(_ bytes: Int64, total: Int64) -> String {
     let value = max(0, bytes)
-    if total >= 1_048_576 { return "\(transferDecimal(Double(value) / 1_048_576)) МБ" }
+    if total >= 1_048_576 { return "\(transferDecimal(Double(value) / 1_048_576)) MB" }
     return transferSize(value)
 }
 private func transferSpeed(_ bytesPerSecond: Double) -> String {
     let megabytesPerSecond = max(0, bytesPerSecond) / 1_048_576
-    return "\(transferDecimal(megabytesPerSecond, fractionDigits:megabytesPerSecond < 0.1 ? 2 : 1)) МБ/с"
+    return "\(transferDecimal(megabytesPerSecond, fractionDigits:megabytesPerSecond < 0.1 ? 2 : 1)) MB/s"
 }
 private func phoneModelLabel(_ rawModel: String?) -> String {
     guard let model = rawModel?.trimmingCharacters(in:.whitespacesAndNewlines), !model.isEmpty else { return "Телефон Android" }
@@ -994,8 +994,15 @@ final class ViewModel: ObservableObject {
     func open(_ value: String) { if let url = URL(string:value), ["http","https"].contains(url.scheme?.lowercased() ?? "") { NSWorkspace.shared.open(url) } }
     func unpair() { queuedFiles.removeAll(); setClipboardSyncEnabled(false); state.unpair(); qr = nil; invitation = ""; message = "Пара удалена" }
 }
+private struct AppLanguageOption: Identifiable {
+    let tag: String
+    let name: String
+    var id: String { tag }
+}
+
 struct ContentView: View {
     @ObservedObject var model: ViewModel
+    @AppStorage("appLanguage") private var appLanguage = "en"
     @State private var section = 0
     @State private var showingText = false
     @State private var confirmingUnpair = false
@@ -1004,6 +1011,22 @@ struct ContentView: View {
     private let blue = Color(red:0.04,green:0.43,blue:0.98)
     private let ink = Color(red:0.08,green:0.12,blue:0.20)
     private let muted = Color(red:0.50,green:0.57,blue:0.69)
+    private let appLanguages: [AppLanguageOption] = [
+        .init(tag:"en",name:"English"), .init(tag:"ru",name:"Русский"), .init(tag:"es",name:"Español"), .init(tag:"fr",name:"Français"),
+        .init(tag:"de",name:"Deutsch"), .init(tag:"it",name:"Italiano"), .init(tag:"pt-BR",name:"Português (Brasil)"),
+        .init(tag:"tr",name:"Türkçe"), .init(tag:"pl",name:"Polski"), .init(tag:"uk",name:"Українська"),
+        .init(tag:"zh-Hans",name:"简体中文"), .init(tag:"ja",name:"日本語"), .init(tag:"ko",name:"한국어"),
+        .init(tag:"ar",name:"العربية"), .init(tag:"hi",name:"हिन्दी"), .init(tag:"id",name:"Bahasa Indonesia"), .init(tag:"nl",name:"Nederlands"),
+        .init(tag:"da",name:"Dansk"), .init(tag:"sv",name:"Svenska"), .init(tag:"nb",name:"Norsk bokmål"), .init(tag:"fi",name:"Suomi"),
+        .init(tag:"el",name:"Ελληνικά"), .init(tag:"cs",name:"Čeština"), .init(tag:"sk",name:"Slovenčina"), .init(tag:"hu",name:"Magyar"),
+        .init(tag:"ro",name:"Română"), .init(tag:"bg",name:"Български"), .init(tag:"hr",name:"Hrvatski"), .init(tag:"sr",name:"Српски"),
+        .init(tag:"sl",name:"Slovenščina"), .init(tag:"et",name:"Eesti"), .init(tag:"lv",name:"Latviešu"), .init(tag:"lt",name:"Lietuvių"),
+        .init(tag:"he",name:"עברית"), .init(tag:"th",name:"ไทย"), .init(tag:"vi",name:"Tiếng Việt"), .init(tag:"ms",name:"Bahasa Melayu"),
+        .init(tag:"bn",name:"বাংলা"), .init(tag:"ta",name:"தமிழ்"), .init(tag:"te",name:"తెలుగు"), .init(tag:"ur",name:"اردو"),
+        .init(tag:"fa",name:"فارسی"), .init(tag:"sw",name:"Kiswahili"), .init(tag:"fil",name:"Filipino"), .init(tag:"ca",name:"Català"),
+        .init(tag:"eu",name:"Euskara"), .init(tag:"gl",name:"Galego"), .init(tag:"is",name:"Íslenska"), .init(tag:"bs",name:"Bosanski"),
+        .init(tag:"mk",name:"Македонски")
+    ]
 
     private func displayState(_ state: String) -> String {
         switch state {
@@ -1056,7 +1079,7 @@ struct ContentView: View {
         Button { section = index } label: {
             HStack(spacing:10) {
                 Image(systemName:index == 0 && section == index ? "house.fill" : icon).font(.system(size:17,weight:.medium)).foregroundColor(section == index ? blue : muted).frame(width:20)
-                Text(label).font(.system(size:12,weight:section == index ? .medium : .regular)).foregroundColor(section == index ? blue : ink)
+                Text(LocalizedStringKey(label)).font(.system(size:12,weight:section == index ? .medium : .regular)).foregroundColor(section == index ? blue : ink)
             }.frame(maxWidth:.infinity,alignment:.leading).padding(.vertical,8).padding(.horizontal,8)
                 .background(section == index ? Color(red:0.84,green:0.90,blue:0.99) : Color.clear).cornerRadius(7)
                 .contentShape(Rectangle())
@@ -1088,7 +1111,7 @@ struct ContentView: View {
                     let live = model.bluetoothModeEnabled ? model.bluetoothConnected : (model.connected && model.lastPhoneContact.map { context.date.timeIntervalSince($0) < 15 } == true)
                     HStack(spacing:5) {
                         if live { Circle().fill(Color(red:0.11,green:0.68,blue:0.29)).frame(width:8,height:8) }
-                        Text(model.bluetoothModeEnabled ? connectionDescription : (live ? "Подключено" : connectionDescription)).foregroundColor(live ? Color(red:0.11,green:0.65,blue:0.28) : muted)
+                        Text(LocalizedStringKey(model.bluetoothModeEnabled ? connectionDescription : (live ? "Подключено" : connectionDescription))).foregroundColor(live ? Color(red:0.11,green:0.65,blue:0.28) : muted)
                     }.font(.system(size:11))
                 }
             }
@@ -1130,7 +1153,7 @@ struct ContentView: View {
     }
     private func actionButton(_ title: String, icon: String, enabled: Bool, action: @escaping () -> Void) -> some View {
         Button(action:action) {
-            HStack(spacing:10) { Image(systemName:icon).font(.system(size:18,weight:.regular)).foregroundColor(blue); Text(title).foregroundColor(ink) }
+            HStack(spacing:10) { Image(systemName:icon).font(.system(size:18,weight:.regular)).foregroundColor(blue); Text(LocalizedStringKey(title)).foregroundColor(ink) }
                 .font(.system(size:12,weight:.medium)).frame(maxWidth:.infinity,minHeight:48)
                 .background(Color.white).cornerRadius(9)
         }.buttonStyle(.plain).disabled(!enabled).opacity(enabled ? 1 : 0.5)
@@ -1143,7 +1166,11 @@ struct ContentView: View {
                 else { Image(systemName:t.type == "file" ? (t.name.lowercased().hasSuffix(".pdf") ? "doc.richtext" : "doc") : t.type == "link" ? "link" : "text.alignleft").foregroundColor(t.type == "file" && t.name.lowercased().hasSuffix(".pdf") ? .white : blue).font(.system(size:16)).frame(maxWidth:.infinity,maxHeight:.infinity) }
             }.frame(width:34,height:34).background(t.type == "file" && t.name.lowercased().hasSuffix(".pdf") && model.previews[t.id] == nil ? Color(red:0.94,green:0.17,blue:0.18) : Color(red:0.90,green:0.94,blue:0.99)).clipShape(RoundedRectangle(cornerRadius:6))
             VStack(alignment:.leading,spacing:4) {
-                Text(t.type == "file" ? t.name : t.type == "link" ? "Ссылка" : "Текст").font(.system(size:12,weight:.medium)).lineLimit(1).truncationMode(.middle).textSelection(.enabled)
+                if t.type == "file" {
+                    Text(t.name).font(.system(size:12,weight:.medium)).lineLimit(1).truncationMode(.middle).textSelection(.enabled)
+                } else {
+                    Text(LocalizedStringKey(t.type == "link" ? "Ссылка" : "Текст")).font(.system(size:12,weight:.medium)).lineLimit(1).truncationMode(.middle).textSelection(.enabled)
+                }
                 if t.type != "file" && !t.text.isEmpty { Text(t.text).lineLimit(2).font(.system(size:11)).textSelection(.enabled) }
                 if t.type != "file" || t.state == "complete" {
                     Text((t.type == "file" ? transferSize(t.size) + " · " : "") + (Calendar.current.isDateInToday(Date(timeIntervalSince1970:t.createdAt)) ? "Сегодня, " + Date(timeIntervalSince1970:t.createdAt).formatted(date:.omitted,time:.shortened) : Date(timeIntervalSince1970:t.createdAt).formatted(date:.abbreviated,time:.shortened))).font(.system(size:10)).foregroundColor(muted)
@@ -1158,18 +1185,18 @@ struct ContentView: View {
                 if t.state == "complete" {
                     Image(systemName:"checkmark").font(.system(size:11,weight:.bold)).foregroundColor(Color(red:0.10,green:0.62,blue:0.26)).frame(width:24,height:24).background(Color(red:0.88,green:0.96,blue:0.90)).clipShape(Circle())
                     VStack(alignment:.leading,spacing:3) {
-                        Text(t.direction == "toMac" ? "Получено" : "Отправлено").foregroundColor(.primary)
-                        Text(t.direction == "toMac" ? "С телефона" : "На телефон").foregroundColor(muted)
+                        Text(LocalizedStringKey(t.direction == "toMac" ? "Получено" : "Отправлено")).foregroundColor(.primary)
+                        Text(LocalizedStringKey(t.direction == "toMac" ? "С телефона" : "На телефон")).foregroundColor(muted)
                         if t.direction == "toMac" && t.type != "file" && !t.text.isEmpty {
                             Button("Копировать") { model.copy(t.text) }.controlSize(.small)
                         }
                     }.font(.system(size:10))
                 } else if t.type == "file" && ["accepted","transferring"].contains(t.state) {
-                    Text(t.direction == "toPhone" ? "↑ Отправка" : "↓ Получение")
+                    Text(LocalizedStringKey(t.direction == "toPhone" ? "↑ Отправка" : "↓ Получение"))
                         .font(.system(size:10,weight:.medium)).foregroundColor(blue)
                         .padding(.horizontal,8).padding(.vertical,5)
                         .background(Color(red:0.91,green:0.95,blue:1.0)).clipShape(Capsule())
-                } else { Text(displayState(t.state)).font(.system(size:10)).foregroundColor(.secondary).lineLimit(2) }
+                } else { Text(LocalizedStringKey(displayState(t.state))).font(.system(size:10)).foregroundColor(.secondary).lineLimit(2) }
             }.frame(width:120,alignment:.leading)
             ZStack { Color.clear; if t.type == "file" || !t.text.isEmpty {
                 Menu {
@@ -1199,7 +1226,7 @@ struct ContentView: View {
                             Image(systemName:"doc").foregroundColor(blue).frame(width:22)
                             VStack(alignment:.leading,spacing:3) {
                                 Text(item.name).lineLimit(1).truncationMode(.middle).textSelection(.enabled)
-                                Text(item.state == "preparing" ? "Подготовка…" : item.state == "failed" ? "Ошибка · \(item.error ?? "Не удалось подготовить файл")" : "В очереди")
+                                Text(LocalizedStringKey(item.state == "preparing" ? "Подготовка…" : item.state == "failed" ? "Ошибка · \(item.error ?? "Не удалось подготовить файл")" : "В очереди"))
                                     .font(.system(size:10)).foregroundColor(item.state == "failed" ? Color(red:0.68,green:0.30,blue:0.36) : muted).lineLimit(2)
                             }
                             Spacer(minLength:4)
@@ -1243,10 +1270,16 @@ struct ContentView: View {
     }
     private var settings: some View {
         VStack(alignment:.leading,spacing:14) {
+            Picker("App language",selection:$appLanguage) {
+                ForEach(appLanguages) { language in
+                    Text(language.name).tag(language.tag)
+                }
+            }
+            Text("Some system messages may still appear in Russian.").font(.caption).foregroundColor(.secondary)
             Toggle("Общий буфер обмена",isOn:clipboardBinding).disabled(!model.paired)
             Toggle("Bluetooth без общей сети Wi‑Fi",isOn:bluetoothModeBinding).disabled(!model.paired)
             Text("Прямой защищённый канал между Mac и телефоном. Bluetooth должен быть включён на обоих устройствах; передача работает на расстоянии Bluetooth.").font(.caption).foregroundColor(.secondary)
-            Text(model.bluetoothStatus).font(.caption).foregroundColor(model.bluetoothConnected ? .green : .secondary)
+            Text(LocalizedStringKey(model.bluetoothStatus)).font(.caption).foregroundColor(model.bluetoothConnected ? .green : .secondary)
             Toggle("Автоотправка снимков Mac",isOn:autoSendMacScreenshotsBinding).disabled(!model.paired || !model.clipboardSyncEnabled)
             Text("Новые снимки из папки снимков macOS автоматически появятся в буфере телефона. Старые файлы не отправляются.").font(.caption).foregroundColor(.secondary)
             Toggle("Принимать файлы автоматически",isOn:autoAcceptIncomingFilesBinding).disabled(!model.paired)
@@ -1263,7 +1296,7 @@ struct ContentView: View {
             ScrollView {
                     VStack(alignment:.leading,spacing:10) {
                     HStack {
-                        Text(section == 0 ? "AndroidMacBridge" : section == 1 ? "Передачи" : section == 2 ? "Буфер" : "Настройки").font(.system(size:16,weight:.semibold))
+                        Text(LocalizedStringKey(section == 0 ? "AndroidMacBridge" : section == 1 ? "Передачи" : section == 2 ? "Буфер" : "Настройки")).font(.system(size:16,weight:.semibold))
                         Spacer()
                         if section == 1 {
                             Button("Открыть папку") { model.openReceivedFolder() }
@@ -1272,7 +1305,7 @@ struct ContentView: View {
                         if section == 2 { Button("Очистить историю",role:.destructive) { confirmingClipboardClear = true }.disabled(model.clipboardHistory.isEmpty) }
                     }.frame(minHeight:24)
                     if section == 0 { deviceCard }
-                    if displayMessage != "Ожидание телефона в локальной сети" { Text(displayMessage).font(.system(size:10)).foregroundColor(.secondary).textSelection(.enabled) }
+                    if displayMessage != "Ожидание телефона в локальной сети" { Text(LocalizedStringKey(displayMessage)).font(.system(size:10)).foregroundColor(.secondary).textSelection(.enabled) }
                     pairing
                     if section == 0 { actions; transfers }
                     else if section == 1 { transfers }
@@ -1281,6 +1314,7 @@ struct ContentView: View {
                 }.padding(.horizontal,14).padding(.top,9).padding(.bottom,14).frame(maxWidth:.infinity,alignment:.leading)
             }.background(Color(red:0.95,green:0.96,blue:0.98))
         }.frame(minWidth:620,minHeight:470).ignoresSafeArea(.container,edges:.top).preferredColorScheme(.light)
+        .environment(\.locale,Locale(identifier:appLanguage))
         .alert("Удалить пару с телефоном?",isPresented:$confirmingUnpair) {
             Button("Удалить",role:.destructive) { model.unpair() }; Button("Отмена",role:.cancel) { }
         } message: { Text("Для повторного подключения потребуется новое сопряжение.") }
@@ -1288,6 +1322,7 @@ struct ContentView: View {
 }
 private struct MenuBarDropView: View {
     @ObservedObject var model: ViewModel
+    @AppStorage("appLanguage") private var appLanguage = "en"
     let openMain: () -> Void
     let chooseFiles: () -> Void
     let toggleClipboard: () -> Void
@@ -1366,12 +1401,14 @@ private struct MenuBarDropView: View {
                     .buttonStyle(.plain).help("Выйти из приложения")
             }
         }.padding(14).frame(width:320).background(panel.ignoresSafeArea()).environment(\.colorScheme,.light)
+            .environment(\.locale,Locale(identifier:appLanguage))
     }
 }
 
 private struct DragPeekView: View {
     @ObservedObject var model: ViewModel
     @ObservedObject var appDelegate: AppDelegate
+    @AppStorage("appLanguage") private var appLanguage = "en"
     @State private var isTargeted = false
     private let blue = Color(red:0.04,green:0.43,blue:0.98)
     var body: some View {
@@ -1402,6 +1439,7 @@ private struct DragPeekView: View {
             return true
         }
         .environment(\.colorScheme,.light)
+        .environment(\.locale,Locale(identifier:appLanguage))
     }
 }
 

@@ -1,0 +1,15 @@
+<resources>
+    <string name="clipboard_tile_label">На Mac</string>
+    <string name="clipboard_tile_description">Отправить текущий текст из буфера обмена на Mac</string>
+    <string name="keyboard_ime_label">Клавиатура AndroidMacBridge</string>
+    <string name="keyboard_subtype_ru">Русский</string>
+    <string name="keyboard_subtype_en">Английский</string>
+    <string name="clipboard_accessibility_label">Автокопирование на Mac</string>
+    <string name="clipboard_accessibility_description">Распознаёт действие копирования в других приложениях и отправляет скопированный обычный текст на сопряжённый Mac, если выбран автоматический режим и включён общий буфер.</string>
+    <string name="compatibility_title">Совместимость устройства</string>
+    <string name="compatibility_refresh">Обновить состояние</string>
+    <string name="compatibility_open_settings">Открыть настройки приложения Android</string>
+    <string name="app_language_title">Язык приложения</string>
+    <string name="app_language_description">Выберите язык интерфейса. Некоторые системные сообщения пока могут отображаться на русском.</string>
+    <string name="language_select_title">Выберите язык приложения</string>
+</resources>
