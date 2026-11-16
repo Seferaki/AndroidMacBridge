@@ -1441,14 +1441,45 @@ class MainActivity : ComponentActivity() {
 
     private fun openReceivedFolder() {
         val directory = DocumentsContract.buildDocumentUri("com.android.externalstorage.documents", "primary:Download/SamsungMacBridge")
-        val intent = Intent(Intent.ACTION_VIEW).setDataAndType(directory, "vnd.android.document/directory")
+        val folderIntent = Intent(Intent.ACTION_VIEW).setDataAndType(directory, "vnd.android.document/directory")
             .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-        try {
-            if (intent.resolveActivity(packageManager) == null) throw android.content.ActivityNotFoundException()
-            startActivity(intent)
-        } catch (_: Exception) {
-            showReceivedFilesFallback()
+
+        // Package visibility can make resolveActivity() return null even when a file browser
+        // can handle this URI. Try the common document browser packages directly first.
+        for (fileBrowser in listOf("com.google.android.documentsui", "com.android.documentsui", "com.sec.android.app.myfiles")) {
+            try {
+                startActivity(Intent(folderIntent).setPackage(fileBrowser))
+                return
+            } catch (_: android.content.ActivityNotFoundException) {
+                // This file browser is not installed or does not support directory URIs.
+            } catch (_: SecurityException) {
+                // Try another system file browser or the platform picker below.
+            }
         }
+
+        try {
+            startActivity(folderIntent)
+            return
+        } catch (_: android.content.ActivityNotFoundException) {
+            // Fall through to the system folder picker.
+        } catch (_: SecurityException) {
+            // Fall through to the system folder picker.
+        }
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            try {
+                startActivity(Intent(Intent.ACTION_OPEN_DOCUMENT_TREE)
+                    .putExtra(DocumentsContract.EXTRA_INITIAL_URI, directory)
+                    .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION))
+                return
+            } catch (_: android.content.ActivityNotFoundException) {
+                // Keep the file list fallback for devices without a document picker.
+            } catch (_: SecurityException) {
+                // Keep the file list fallback for devices that deny access to this location.
+            }
+        }
+
+        showReceivedFilesFallback()
     }
 
     private fun showReceivedFilesFallback() {

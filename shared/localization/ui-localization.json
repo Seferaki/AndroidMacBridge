@@ -181,7 +181,20 @@
     "выключен; включите вручную или используйте Wi‑Fi": "disabled; enable it manually or use Wi-Fi",
     "состояние адаптера не удалось определить": "adapter status could not be determined",
     "«Поделиться»: файлы и текст принимаются через системное меню.": "“Share”: files and text are received through the system menu.",
-    "Если причина ограничения не показана Android, проверьте настройки батареи и фоновой работы вручную.": "If Android does not show why background activity is restricted, check battery and background settings manually."
+    "Если причина ограничения не показана Android, проверьте настройки батареи и фоновой работы вручную.": "If Android does not show why background activity is restricted, check battery and background settings manually.",
+    "Bluetooth выключен": "Bluetooth is off",
+    "Bluetooth включён · ожидаю Mac": "Bluetooth is on · waiting for the Mac",
+    "Не удалось сделать телефон видимым для поиска по Bluetooth (1)": "Could not make the phone discoverable over Bluetooth (1)",
+    "Не удалось сделать телефон видимым для поиска по Bluetooth (2)": "Could not make the phone discoverable over Bluetooth (2)",
+    "Не удалось сделать телефон видимым для поиска по Bluetooth (3)": "Could not make the phone discoverable over Bluetooth (3)",
+    "Не удалось сделать телефон видимым для поиска по Bluetooth (4)": "Could not make the phone discoverable over Bluetooth (4)",
+    "Не удалось сделать телефон видимым для поиска по Bluetooth (5)": "Could not make the phone discoverable over Bluetooth (5)",
+    "Не удалось сделать телефон видимым для поиска по Bluetooth ({code})": "Could not make the phone discoverable over Bluetooth ({code})",
+    "Не удалось включить Bluetooth-рекламу ({code})": "Could not make the phone discoverable over Bluetooth ({code})",
+    "Mac найден · устанавливаю защищённую связь": "Mac found · establishing a secure connection",
+    "Связь Bluetooth прервалась · ищу Mac": "Bluetooth connection lost · searching for the Mac",
+    "Не удалось подготовить Bluetooth-службу GATT": "Could not prepare the Bluetooth GATT service",
+    "Ошибка Bluetooth-пакета": "Bluetooth packet error"
   },
   "es": {
     "Главная": "Inicio",

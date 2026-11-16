@@ -49,7 +49,7 @@ class BluetoothBridgeService : Service() {
 
     private val advertiserCallback = object : AdvertiseCallback() {
         override fun onStartSuccess(settingsInEffect: AdvertiseSettings?) = setStatus("Bluetooth включён · ожидаю Mac")
-        override fun onStartFailure(errorCode: Int) = fail("Не удалось включить Bluetooth-рекламу ($errorCode)")
+        override fun onStartFailure(errorCode: Int) = fail("Не удалось сделать телефон видимым для поиска по Bluetooth ($errorCode)")
     }
 
     private val gattCallback = object : BluetoothGattServerCallback() {

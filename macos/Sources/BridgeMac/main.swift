@@ -1268,26 +1268,69 @@ struct ContentView: View {
                 Button("Очистить",role:.destructive) { model.clearClipboardHistory() }; Button("Отмена",role:.cancel) { }
             }
     }
-    private var settings: some View {
-        VStack(alignment:.leading,spacing:14) {
-            Picker("App language",selection:$appLanguage) {
-                ForEach(appLanguages) { language in
-                    Text(language.name).tag(language.tag)
+    private func settingsCard<Content: View>(title: String, icon: String? = nil, @ViewBuilder content: () -> Content) -> some View {
+        VStack(alignment:.leading,spacing:11) {
+            HStack(spacing: icon == nil ? 0 : 9) {
+                if let icon {
+                    Image(systemName:icon)
+                        .font(.system(size:13,weight:.semibold))
+                        .foregroundColor(blue)
+                        .frame(width:30,height:30)
+                        .background(Color(red:0.91,green:0.95,blue:1),in:RoundedRectangle(cornerRadius:9))
                 }
+                Text(LocalizedStringKey(title)).font(.system(size:13,weight:.semibold)).foregroundColor(ink)
             }
-            Text("Some system messages may still appear in Russian.").font(.caption).foregroundColor(.secondary)
-            Toggle("Общий буфер обмена",isOn:clipboardBinding).disabled(!model.paired)
-            Toggle("Bluetooth без общей сети Wi‑Fi",isOn:bluetoothModeBinding).disabled(!model.paired)
-            Text("Прямой защищённый канал между Mac и телефоном. Bluetooth должен быть включён на обоих устройствах; передача работает на расстоянии Bluetooth.").font(.caption).foregroundColor(.secondary)
-            Text(LocalizedStringKey(model.bluetoothStatus)).font(.caption).foregroundColor(model.bluetoothConnected ? .green : .secondary)
-            Toggle("Автоотправка снимков Mac",isOn:autoSendMacScreenshotsBinding).disabled(!model.paired || !model.clipboardSyncEnabled)
-            Text("Новые снимки из папки снимков macOS автоматически появятся в буфере телефона. Старые файлы не отправляются.").font(.caption).foregroundColor(.secondary)
-            Toggle("Принимать файлы автоматически",isOn:autoAcceptIncomingFilesBinding).disabled(!model.paired)
-            Text("Входящие файлы от сопряжённого телефона будут сохраняться в Загрузки/SamsungMacBridge без запроса подтверждения.").font(.caption).foregroundColor(.secondary)
-            Toggle("Запускать приложение при входе",isOn:loginBinding)
-            if model.loginItemNeedsApproval { Text("Разрешите запуск в Системных настройках → Основные → Объекты входа.").font(.caption).foregroundColor(.secondary) }
-            if model.paired { Button("Удалить пару",role:.destructive) { confirmingUnpair = true } }
-            else { Button("Подключить телефон") { model.connect() }.disabled(!model.connected) }
+            content().padding(.leading, icon == nil ? 0 : 4)
+        }
+        .padding(15)
+        .frame(maxWidth:.infinity,alignment:.leading)
+        .background(Color.white,in:RoundedRectangle(cornerRadius:14))
+        .overlay(RoundedRectangle(cornerRadius:14).stroke(Color(red:0.89,green:0.91,blue:0.94),lineWidth:1))
+    }
+    private var settings: some View {
+        VStack(alignment:.leading,spacing:12) {
+            settingsCard(title:"Язык",icon:"globe") {
+                Picker("App language",selection:$appLanguage) {
+                    ForEach(appLanguages) { language in
+                        Text(language.name).tag(language.tag)
+                    }
+                }.pickerStyle(.menu)
+                Text(LocalizedStringKey("Выбранный язык применяется только к AndroidMacBridge и сохраняется на этом Mac."))
+                    .font(.caption).foregroundColor(.secondary)
+                Text(LocalizedStringKey("Системные запросы разрешений отображаются на языке устройства."))
+                    .font(.caption).foregroundColor(.secondary)
+            }
+            settingsCard(title:"Общий буфер") {
+                Toggle("Общий буфер обмена",isOn:clipboardBinding).disabled(!model.paired)
+                Text(LocalizedStringKey("Синхронизирует текст, ссылки и изображения с сопряжённым телефоном."))
+                    .font(.caption).foregroundColor(.secondary)
+            }
+            settingsCard(title:"Подключение") {
+                Toggle("Bluetooth без общей сети Wi‑Fi",isOn:bluetoothModeBinding).disabled(!model.paired)
+                Text("Прямой защищённый канал между Mac и телефоном. Bluetooth должен быть включён на обоих устройствах; передача работает на расстоянии Bluetooth.")
+                    .font(.caption).foregroundColor(.secondary)
+                Text(LocalizedStringKey(model.bluetoothStatus))
+                    .font(.caption).foregroundColor(model.bluetoothConnected ? .green : .secondary)
+            }
+            settingsCard(title:"Файлы и снимки") {
+                Toggle("Автоотправка снимков Mac",isOn:autoSendMacScreenshotsBinding)
+                    .disabled(!model.paired || !model.clipboardSyncEnabled)
+                Text("Новые снимки из папки снимков macOS автоматически появятся в буфере телефона. Старые файлы не отправляются.")
+                    .font(.caption).foregroundColor(.secondary)
+                Divider()
+                Toggle("Принимать файлы автоматически",isOn:autoAcceptIncomingFilesBinding).disabled(!model.paired)
+                Text("Входящие файлы от сопряжённого телефона будут сохраняться в Загрузки/SamsungMacBridge без запроса подтверждения.")
+                    .font(.caption).foregroundColor(.secondary)
+            }
+            settingsCard(title:"Запуск приложения") {
+                Toggle("Запускать приложение при входе",isOn:loginBinding)
+                if model.loginItemNeedsApproval {
+                    Text("Разрешите запуск в Системных настройках → Основные → Объекты входа.")
+                        .font(.caption).foregroundColor(.secondary)
+                }
+                if model.paired { Button("Удалить пару",role:.destructive) { confirmingUnpair = true } }
+                else { Button("Подключить телефон") { model.connect() }.disabled(!model.connected) }
+            }
         }.frame(maxWidth:.infinity,alignment:.leading)
     }
     var body: some View {
