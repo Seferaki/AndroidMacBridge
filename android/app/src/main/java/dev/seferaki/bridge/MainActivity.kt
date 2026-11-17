@@ -849,7 +849,7 @@ class MainActivity : ComponentActivity() {
             }
         })
         incomingFilesPanel.addView(TextView(this).apply {
-            text = "Файлы от сопряжённого Mac будут сохраняться в Загрузки/SamsungMacBridge без запроса подтверждения."
+            text = "Файлы от сопряжённого Mac будут сохраняться в Документы/AndroidMacBridge без запроса подтверждения."
             textSize = 12f; setTextColor(0xFF657184.toInt()); setPadding(0, dp(4), 0, 0)
         })
         settingsPanel.addView(incomingFilesPanel, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply { topMargin = dp(12) })
@@ -1440,7 +1440,8 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun openReceivedFolder() {
-        val directory = DocumentsContract.buildDocumentUri("com.android.externalstorage.documents", "primary:Download/SamsungMacBridge")
+        ReceivedFilesDirectory.migrateLegacyFiles(this)
+        val directory = DocumentsContract.buildDocumentUri("com.android.externalstorage.documents", "primary:Documents/AndroidMacBridge")
         val folderIntent = Intent(Intent.ACTION_VIEW).setDataAndType(directory, "vnd.android.document/directory")
             .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
 
@@ -1484,7 +1485,7 @@ class MainActivity : ComponentActivity() {
 
     private fun showReceivedFilesFallback() {
         val files = FileLocationStore(this).recentReceived()
-        val path = "Путь: Загрузки/SamsungMacBridge"
+        val path = "Путь: Документы/AndroidMacBridge"
         if (files.isEmpty()) {
             AlertDialog.Builder(this).setTitle("Папка с полученными файлами")
                 .setMessage("Файловый менеджер не смог открыть папку автоматически. $path")
@@ -1725,17 +1726,18 @@ class MainActivity : ComponentActivity() {
                 val actualHash = session.digest.digest().joinToString("") { "%02x".format(it.toInt() and 255) }
                 require(message.optLong("size", -1) == expectedSize && session.received == expectedSize) { "Размер файла не совпадает" }
                 require(message.optString("sha256") == expectedHash && actualHash == expectedHash) { "Контрольная сумма файла не совпадает" }
+                ReceivedFilesDirectory.migrateLegacyFiles(this@MainActivity)
                 val values = ContentValues().apply {
                     put(MediaStore.MediaColumns.DISPLAY_NAME, session.transfer.optString("name", "Файл"))
                     put(MediaStore.MediaColumns.MIME_TYPE, "application/octet-stream")
-                    put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS + "/SamsungMacBridge")
+                    put(MediaStore.MediaColumns.RELATIVE_PATH, ReceivedFilesDirectory.relativePath())
                     put(MediaStore.MediaColumns.IS_PENDING, 1)
                 }
                 val uri = contentResolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values)
-                    ?: throw IOException("Не удалось создать файл в Загрузках")
+                    ?: throw IOException("Не удалось создать файл в Документах")
                 try {
                     contentResolver.openOutputStream(uri, "w")?.use { output -> session.temporary.inputStream().use { it.copyTo(output) } }
-                        ?: throw IOException("Не удалось открыть файл в Загрузках")
+                        ?: throw IOException("Не удалось открыть файл в Документах")
                     if (contentResolver.update(uri, ContentValues().apply { put(MediaStore.MediaColumns.IS_PENDING, 0) }, null, null) != 1) throw IOException("Не удалось сохранить файл")
                 } catch (error: Exception) { contentResolver.delete(uri, null, null); throw error }
                 FileLocationStore(this@MainActivity).record(id, uri, session.transfer.optString("name"), received = true)
@@ -1744,7 +1746,7 @@ class MainActivity : ComponentActivity() {
                 upsertBluetoothTransfer(session.transfer)
                 BluetoothBridgeRuntime.send(BluetoothFileMessage.reply(id, "result", "complete", sha256 = expectedHash))
                 if (autoAcceptedReceives.contains(id)) notifyAutoReceivedFile(id, session.transfer.optString("name", "Файл"))
-                runOnUiThread { statusView?.text = "Файл «${session.transfer.optString("name") }» сохранён в Загрузках"; renderTransfers(lastTransfers) }
+                runOnUiThread { statusView?.text = "Файл «${session.transfer.optString("name") }» сохранён в Документах"; renderTransfers(lastTransfers) }
             } catch (error: Exception) {
                 failBluetoothReceive(id, session, error.localizedMessage ?: "Не удалось сохранить файл")
                 BluetoothBridgeRuntime.send(BluetoothFileMessage.reply(id, "result", "failed"))
@@ -2058,7 +2060,7 @@ class MainActivity : ComponentActivity() {
     private fun confirmIncomingFile(transfer: JSONObject) {
         AlertDialog.Builder(this)
             .setTitle("Принять файл?")
-            .setMessage("Файл «${transfer.optString("name")}» будет сохранён в папку Загрузки/SamsungMacBridge.")
+            .setMessage("Файл «${transfer.optString("name")}» будет сохранён в папку Документы/AndroidMacBridge.")
             .setNegativeButton("Отмена", null)
             .setPositiveButton("Сохранить") { _, _ -> receiveFile(transfer) }
             .show()
@@ -2082,14 +2084,15 @@ class MainActivity : ComponentActivity() {
                 client.progress = { sent, total -> updateTransferProgress(id, sent, total, started) }
                 val received = client.download(id, transfer.optLong("size"), transfer.optString("sha256"))
                 temporary = received
+                ReceivedFilesDirectory.migrateLegacyFiles(this@MainActivity)
                 val values = ContentValues().apply {
                     put(MediaStore.MediaColumns.DISPLAY_NAME, transfer.optString("name", "файл"))
                     put(MediaStore.MediaColumns.MIME_TYPE, "application/octet-stream")
-                    put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS + "/SamsungMacBridge")
+                    put(MediaStore.MediaColumns.RELATIVE_PATH, ReceivedFilesDirectory.relativePath())
                     put(MediaStore.MediaColumns.IS_PENDING, 1)
                 }
                 val fileUri = contentResolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values)
-                    ?: throw IOException("Не удалось создать файл в Загрузках")
+                    ?: throw IOException("Не удалось создать файл в Документах")
                 destination = fileUri
                 contentResolver.openOutputStream(fileUri, "w")?.use { output ->
                     received.inputStream().use { input ->
@@ -2101,12 +2104,12 @@ class MainActivity : ComponentActivity() {
                             if (count > 0) output.write(buffer, 0, count)
                         }
                     }
-                } ?: throw IOException("Не удалось открыть файл в Загрузках")
+                } ?: throw IOException("Не удалось открыть файл в Документах")
                 synchronized(publicationLock) {
                     if (cancelledReceives.contains(id)) throw IOException("Отменено")
                     receiptStore.record(id, transfer.optString("sha256"), fileUri, client.pair?.deviceId ?: throw IOException("Пара с Mac недоступна"))
                     val visible = ContentValues().apply { put(MediaStore.MediaColumns.IS_PENDING, 0) }
-                    if (contentResolver.update(fileUri, visible, null, null) != 1) throw IOException("Не удалось сохранить файл в Загрузках")
+                    if (contentResolver.update(fileUri, visible, null, null) != 1) throw IOException("Не удалось сохранить файл в Документах")
                     published = true
                 }
                 FileLocationStore(this@MainActivity).record(id, fileUri, transfer.optString("name", "Файл"), received = true)
@@ -2115,7 +2118,7 @@ class MainActivity : ComponentActivity() {
                 cacheImagePreview(id, transfer.optString("name"), fileUri)
                 if (autoAcceptedReceives.contains(id)) notifyAutoReceivedFile(id, transfer.optString("name", "Файл"))
                 runOnUiThread {
-                    statusView?.text = if (acknowledged) "Файл «${transfer.optString("name")}» сохранён в Загрузках"
+                    statusView?.text = if (acknowledged) "Файл «${transfer.optString("name")}» сохранён в Документах"
                     else "Файл сохранён, но Mac не получил подтверждение."
                 }
             } catch (error: Exception) {

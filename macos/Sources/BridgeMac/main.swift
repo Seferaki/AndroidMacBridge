@@ -201,7 +201,16 @@ final class ViewModel: ObservableObject {
         notifyCompletedAutoReceives(state.transfers)
     }
     func revealFile(_ transfer: Transfer) {
-        guard let path = filePaths[transfer.id], FileManager.default.fileExists(atPath:path) else {
+        guard let storedPath = filePaths[transfer.id] else {
+            message = "Путь к файлу недоступен. Файл мог быть перемещён или передан до этого обновления."
+            return
+        }
+        let path = reconciledReceivedFilePath(storedPath)
+        if path != storedPath {
+            filePaths[transfer.id] = path
+            UserDefaults.standard.set(filePaths,forKey:"bridge.localFilePaths")
+        }
+        guard FileManager.default.fileExists(atPath:path) else {
             message = "Путь к файлу недоступен. Файл мог быть перемещён или передан до этого обновления."
             return
         }
@@ -212,11 +221,55 @@ final class ViewModel: ObservableObject {
         revealFile(transfer)
     }
     func openReceivedFolder() {
-        let folder = FileManager.default.urls(for:.downloadsDirectory,in:.userDomainMask)[0].appendingPathComponent("SamsungMacBridge",isDirectory:true)
         do {
-            try FileManager.default.createDirectory(at:folder,withIntermediateDirectories:true)
+            let folder = try receivedFilesDirectory()
             guard NSWorkspace.shared.open(folder) else { throw BridgeError.invalid("Finder не смог открыть папку") }
         } catch { fail(error) }
+    }
+    private func receivedFilesDirectory() throws -> URL {
+        let fileManager = FileManager.default
+        let documents = fileManager.urls(for:.documentDirectory,in:.userDomainMask)[0]
+        let folder = documents.appendingPathComponent("AndroidMacBridge",isDirectory:true)
+        let legacy = fileManager.urls(for:.downloadsDirectory,in:.userDomainMask)[0]
+            .appendingPathComponent("SamsungMacBridge",isDirectory:true)
+
+        if fileManager.fileExists(atPath:legacy.path) {
+            if !fileManager.fileExists(atPath:folder.path) {
+                do { try fileManager.moveItem(at:legacy,to:folder) }
+                catch {
+                    try? fileManager.createDirectory(at:folder,withIntermediateDirectories:true)
+                    moveLegacyReceivedItems(from:legacy,to:folder)
+                }
+            } else {
+                moveLegacyReceivedItems(from:legacy,to:folder)
+            }
+        }
+        try fileManager.createDirectory(at:folder,withIntermediateDirectories:true)
+        return folder
+    }
+    private func moveLegacyReceivedItems(from legacy: URL, to folder: URL) {
+        let fileManager = FileManager.default
+        guard let items = try? fileManager.contentsOfDirectory(at:legacy,includingPropertiesForKeys:nil) else { return }
+        for item in items {
+            let destination = folder.appendingPathComponent(item.lastPathComponent)
+            guard !fileManager.fileExists(atPath:destination.path) else { continue }
+            try? fileManager.moveItem(at:item,to:destination)
+        }
+        if let remaining = try? fileManager.contentsOfDirectory(at:legacy,includingPropertiesForKeys:nil), remaining.isEmpty {
+            try? fileManager.removeItem(at:legacy)
+        }
+    }
+    private func reconciledReceivedFilePath(_ path: String) -> String {
+        let fileManager = FileManager.default
+        let legacyRoot = fileManager.urls(for:.downloadsDirectory,in:.userDomainMask)[0]
+            .appendingPathComponent("SamsungMacBridge",isDirectory:true).standardizedFileURL.path
+        let prefix = legacyRoot + "/"
+        guard path.hasPrefix(prefix) else { return path }
+        let relativePath = String(path.dropFirst(prefix.count))
+        let destination = fileManager.urls(for:.documentDirectory,in:.userDomainMask)[0]
+            .appendingPathComponent("AndroidMacBridge",isDirectory:true)
+            .appendingPathComponent(relativePath).standardizedFileURL.path
+        return !fileManager.fileExists(atPath:path) && fileManager.fileExists(atPath:destination) ? destination : path
     }
     private func notifyCompletedAutoReceives(_ candidates: [Transfer]) {
         let center = UNUserNotificationCenter.current()
@@ -367,13 +420,12 @@ final class ViewModel: ObservableObject {
                 if state.transfers.contains(where: { $0.id == id }) { return }
                 _ = try state.offerFile(direction:"toMac",name:name,size:size,sha256:hash,transferID:id)
                 if autoAcceptIncomingFiles {
-                    let folder = FileManager.default.urls(for:.downloadsDirectory,in:.userDomainMask)[0].appendingPathComponent("SamsungMacBridge",isDirectory:true)
-                    try FileManager.default.createDirectory(at:folder,withIntermediateDirectories:true)
+                    let folder = try receivedFilesDirectory()
                     try state.accept(id,destination:folder)
                     try prepareBluetoothReceive(id)
                     autoAcceptedFileIDs.insert(id)
                     try central.send(BluetoothFileMessage.reply(id:id,phase:"decision",state:"accepted"))
-                    self.message = "Принимаю «\(name)» по Bluetooth в Загрузки/SamsungMacBridge."
+                    self.message = "Принимаю «\(name)» по Bluetooth в Документы/AndroidMacBridge."
                 } else {
                     self.message = "Файл «\(name)» ждёт подтверждения на Mac."
                 }
@@ -956,16 +1008,14 @@ final class ViewModel: ObservableObject {
             guard autoAcceptingFileIDs.insert(transfer.id).inserted else { continue }
             defer { autoAcceptingFileIDs.remove(transfer.id) }
             do {
-                let downloads = FileManager.default.urls(for:.downloadsDirectory,in:.userDomainMask)[0]
-                    .appendingPathComponent("SamsungMacBridge",isDirectory:true)
-                try FileManager.default.createDirectory(at:downloads,withIntermediateDirectories:true)
-                try state.accept(transfer.id,destination:downloads)
+                let folder = try receivedFilesDirectory()
+                try state.accept(transfer.id,destination:folder)
                 autoAcceptedFileIDs.insert(transfer.id)
                 if bluetoothModeEnabled {
                     try prepareBluetoothReceive(transfer.id)
                     try bluetoothCentral?.send(BluetoothFileMessage.reply(id:transfer.id,phase:"decision",state:"accepted"))
                     message = "Файл «\(transfer.name)» принимается автоматически по Bluetooth."
-                } else { message = "Файл «\(transfer.name)» принимается автоматически в Загрузки/SamsungMacBridge." }
+                } else { message = "Файл «\(transfer.name)» принимается автоматически в Документы/AndroidMacBridge." }
             } catch {
                 if bluetoothModeEnabled {
                     try? bluetoothCentral?.send(BluetoothFileMessage.reply(id:transfer.id,phase:"decision",state:"rejected"))
@@ -1319,7 +1369,7 @@ struct ContentView: View {
                     .font(.caption).foregroundColor(.secondary)
                 Divider()
                 Toggle("Принимать файлы автоматически",isOn:autoAcceptIncomingFilesBinding).disabled(!model.paired)
-                Text("Входящие файлы от сопряжённого телефона будут сохраняться в Загрузки/SamsungMacBridge без запроса подтверждения.")
+                Text("Входящие файлы от сопряжённого телефона будут сохраняться в Документы/AndroidMacBridge без запроса подтверждения.")
                     .font(.caption).foregroundColor(.secondary)
             }
             settingsCard(title:"Запуск приложения") {

@@ -113,13 +113,14 @@ class BackgroundTransferService : Service() {
             client.accept(id)
             val received = client.download(id, transfer.optLong("size"), transfer.optString("sha256"))
             temporary = received
+            ReceivedFilesDirectory.migrateLegacyFiles(this)
             val values = ContentValues().apply {
                 put(MediaStore.MediaColumns.DISPLAY_NAME, transfer.optString("name", "Файл"))
                 put(MediaStore.MediaColumns.MIME_TYPE, "application/octet-stream")
-                put(MediaStore.MediaColumns.RELATIVE_PATH, "Download/SamsungMacBridge")
+                put(MediaStore.MediaColumns.RELATIVE_PATH, ReceivedFilesDirectory.relativePath())
                 put(MediaStore.MediaColumns.IS_PENDING, 1)
             }
-            val uri = contentResolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values) ?: throw IOException("Не удалось создать файл в Загрузках")
+            val uri = contentResolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values) ?: throw IOException("Не удалось создать файл в Документах")
             destination = uri
             contentResolver.openOutputStream(uri, "w")?.use { output -> received.inputStream().use { it.copyTo(output) } }
                 ?: throw IOException("Не удалось открыть файл для сохранения")
